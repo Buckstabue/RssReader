@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">KiyakoVyacheslav</string>
+    <string name="rss_feed_no_news">There are no news to show.</string>
 </resources>
