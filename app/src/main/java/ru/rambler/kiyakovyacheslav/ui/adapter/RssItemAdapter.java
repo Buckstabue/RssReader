@@ -63,11 +63,11 @@ public class RssItemAdapter extends RecyclerView.Adapter<RssItemAdapter.RssItemV
             super(itemView);
             ButterKnife.bind(this, itemView);
             if (listener != null) {
-//                itemView.setOnClickListener(v -> {
-//                    int adapterPosition = getAdapterPosition();
-//                    RssViewItem rssViewItem = rssViewItems.get(adapterPosition);
-//                    listener.onItemClicked(rssViewItem, adapterPosition);
-//                });
+                itemView.setOnClickListener(v -> {
+                    int adapterPosition = getAdapterPosition();
+                    RssViewItem rssViewItem = rssViewItems.get(adapterPosition);
+                    listener.onItemClicked(rssViewItem, adapterPosition);
+                });
             }
         }
 

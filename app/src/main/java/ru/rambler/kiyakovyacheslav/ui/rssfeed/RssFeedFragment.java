@@ -3,13 +3,13 @@ package ru.rambler.kiyakovyacheslav.ui.rssfeed;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
-
-import com.malinskiy.superrecyclerview.SuperRecyclerView;
 
 import java.util.List;
 
@@ -27,7 +27,10 @@ import ru.rambler.kiyakovyacheslav.ui.rssfeed.di.RssViewModule;
 public class RssFeedFragment extends Fragment implements IRssFeedView {
 
     @BindView(R.id.rss_feed)
-    SuperRecyclerView rssRecyclerView;
+    RecyclerView rssRecyclerView;
+
+    @BindView(R.id.swipe_refresh_layout)
+    SwipeRefreshLayout swipeRefreshLayout;
 
     @Inject
     IRssFeedPresenter rssFeedPresenter;
@@ -63,12 +66,12 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
 
     private void initViews() {
         rssItemAdapter = new RssItemAdapter((item, pos) -> rssFeedPresenter.onRssItemClicked(item, pos));
-        rssRecyclerView.setLayoutManager(new LinearLayoutManager(rssRecyclerView.getContext()));
+        rssRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         rssRecyclerView.setAdapter(rssItemAdapter);
     }
 
     private void setListeners() {
-        rssRecyclerView.setRefreshListener(() -> rssFeedPresenter.loadRssItems());
+        swipeRefreshLayout.setOnRefreshListener(() -> rssFeedPresenter.loadRssItems());
     }
 
     @Override
@@ -91,14 +94,12 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
 
     @Override
     public void showRefreshProgressView() {
-        rssRecyclerView.setRefreshing(true);
-        rssRecyclerView.showProgress();
+        swipeRefreshLayout.setRefreshing(true);
     }
 
     @Override
     public void hideRefreshProgressView() {
-        rssRecyclerView.setRefreshing(false);
-        rssRecyclerView.hideProgress();
+        swipeRefreshLayout.setRefreshing(false);
     }
 
     @Override
