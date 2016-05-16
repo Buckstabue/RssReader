@@ -1,5 +1,4 @@
-package ru.rambler.kiyakovyacheslav.di;
-
+package ru.rambler.kiyakovyacheslav;
 
 import android.content.Context;
 
@@ -8,48 +7,44 @@ import com.squareup.picasso.Picasso;
 import dagger.Module;
 import dagger.Provides;
 import okhttp3.OkHttpClient;
-import ru.rambler.kiyakovyacheslav.App;
+import ru.rambler.kiyakovyacheslav.di.AppScope;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
 import ru.rambler.kiyakovyacheslav.model.RssFeedManager;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-@Module
-public class AppModule {
-    private App app;
+import static org.mockito.Mockito.mock;
 
-    public AppModule(App app) {
-        this.app = app;
-    }
+@Module
+public class AppTestModule {
 
     @AppScope
     @Provides
     public OkHttpClient provideOkHttpClient() {
-        return new OkHttpClient();
+        return mock(OkHttpClient.class);
     }
 
     @AppScope
     @Provides
-    public IRssFeedManager provideRssFeedManager(OkHttpClient httpClient) {
-        return new RssFeedManager(httpClient);
+    public IRssFeedManager provideRssFeedManager() {
+        return mock(RssFeedManager.class);
     }
 
     @AppScope
     @Provides
     public Context provideApplicationContext() {
-        return app;
+        return mock(Context.class);
     }
 
     @AppScope
     @Provides
     public Picasso providePicasso() {
-        return Picasso.with(app);
+        return mock(Picasso.class);
     }
 
     @AppScope
     @Provides
     public RxUtil provideRxUtil() {
-        return new RxUtil(Schedulers.io(), AndroidSchedulers.mainThread());
+        return new RxUtil(Schedulers.immediate(), Schedulers.immediate());
     }
 }

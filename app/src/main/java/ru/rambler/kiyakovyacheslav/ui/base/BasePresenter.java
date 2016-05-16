@@ -4,9 +4,11 @@ import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
 public abstract class BasePresenter implements IBasePresenter {
+
     private CompositeSubscription compositeSubscription = new CompositeSubscription();
 
-    protected void addSubscription(Subscription subscription) {
+    @Override
+    public void addSubscription(Subscription subscription) {
         compositeSubscription.add(subscription);
     }
 

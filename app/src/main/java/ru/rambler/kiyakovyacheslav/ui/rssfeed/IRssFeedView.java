@@ -11,4 +11,6 @@ public interface IRssFeedView extends IBaseView {
     void collapseRssItem(RssViewItem rssViewItem, int position);
     void showRefreshProgressView();
     void hideRefreshProgressView();
+    void showEmptyView();
+    void hideEmptyView();
 }

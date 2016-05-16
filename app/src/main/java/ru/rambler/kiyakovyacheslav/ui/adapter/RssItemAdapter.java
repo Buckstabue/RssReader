@@ -8,20 +8,30 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import java.util.Collections;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import ru.rambler.kiyakovyacheslav.App;
 import ru.rambler.kiyakovyacheslav.R;
 import ru.rambler.kiyakovyacheslav.model.RssItem;
 
 public class RssItemAdapter extends RecyclerView.Adapter<RssItemAdapter.RssItemViewHolder> {
+
+    @Inject
+    Picasso picasso;
+
     private List<RssViewItem> rssViewItems = Collections.emptyList();
     private OnRecyclerViewItemClickListener<RssViewItem> onItemClickListener = null;
 
     public RssItemAdapter(@Nullable OnRecyclerViewItemClickListener<RssViewItem> onItemClickListener) {
         this.onItemClickListener = onItemClickListener;
+        App.getAppComponent().inject(this);
     }
 
     public void setRssViewItems(List<RssViewItem> rssViewItems) {
@@ -56,8 +66,8 @@ public class RssItemAdapter extends RecyclerView.Adapter<RssItemAdapter.RssItemV
         @BindView(R.id.description)
         TextView descriptionTextView;
 
-        @BindView(R.id.publication_date)
-        TextView publicationDateTextView;
+        @BindView(R.id.website)
+        TextView websiteTextView;
 
         public RssItemViewHolder(View itemView, OnRecyclerViewItemClickListener<RssViewItem> listener) {
             super(itemView);
@@ -75,8 +85,18 @@ public class RssItemAdapter extends RecyclerView.Adapter<RssItemAdapter.RssItemV
             RssItem rssItem = item.getRssItem();
             titleTextView.setText(rssItem.getTitle());
             descriptionTextView.setText(rssItem.getDescription());
-            // TODO show the publication date and icon
-            // TODO handle expanded flag
+            descriptionTextView.setVisibility(item.isExpanded() ? View.VISIBLE : View.GONE);
+            websiteTextView.setText(item.getRssItem().getWebsiteProvider());
+            String iconUrl = item.getRssItem().getImageLink();
+            if (iconUrl != null) {
+                picasso.load(iconUrl)
+                        .resizeDimen(R.dimen.rss_item_icon_width, R.dimen.rss_item_icon_height)
+                        .placeholder(R.drawable.progress_animation)
+                        .error(R.drawable.black_figure)
+                        .into(iconImageView);
+            } else {
+                iconImageView.setImageResource(R.drawable.black_figure);
+            }
         }
     }
 

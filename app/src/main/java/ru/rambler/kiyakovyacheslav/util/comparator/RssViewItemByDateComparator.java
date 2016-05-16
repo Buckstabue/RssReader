@@ -6,7 +6,7 @@ import java.util.Date;
 import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
 
 /**
- * Used to sort rss items by their dates
+ * Used to sort rss items by their dates in descending order
  */
 public class RssViewItemByDateComparator implements Comparator<RssViewItem> {
 
@@ -14,12 +14,12 @@ public class RssViewItemByDateComparator implements Comparator<RssViewItem> {
     public int compare(RssViewItem lhs, RssViewItem rhs) {
         Date lhsDate = lhs.getRssItem().getPublicationDate();
         if (lhsDate == null) {
-            return -1;
+            return 1;
         }
         Date rhsDate = rhs.getRssItem().getPublicationDate();
         if (rhsDate == null) {
-            return 1;
+            return -1;
         }
-        return lhsDate.compareTo(rhsDate);
+        return -lhsDate.compareTo(rhsDate);
     }
 }

@@ -1,10 +1,9 @@
-package ru.rambler.kiyakovyacheslav.ui.rssfeed.di;
+package ru.rambler.kiyakovyacheslav.RssFeed.di;
 
 import dagger.Module;
 import dagger.Provides;
 import ru.rambler.kiyakovyacheslav.di.ActivityScope;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
-import ru.rambler.kiyakovyacheslav.model.RssUrlProvider;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssFeedPresenter;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssFeedView;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssUrlProvider;
@@ -12,19 +11,16 @@ import ru.rambler.kiyakovyacheslav.ui.rssfeed.RssFeedPresenter;
 import ru.rambler.kiyakovyacheslav.util.RssFeedCache;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+
 @Module
-public class RssViewModule {
-    private IRssFeedView rssIRssFeedView;
+public class RssViewTestModule {
 
-    public RssViewModule(IRssFeedView rssIRssFeedView) {
-        this.rssIRssFeedView = rssIRssFeedView;
-    }
+    private IRssFeedView rssFeedView;
 
-
-    @Provides
-    @ActivityScope
-    public IRssUrlProvider provideRssUrlProvider() {
-        return new RssUrlProvider();
+    public RssViewTestModule(IRssFeedView rssFeedView) {
+        this.rssFeedView = rssFeedView;
     }
 
     @Provides
@@ -33,12 +29,18 @@ public class RssViewModule {
                                                      IRssFeedManager rssFeedManager,
                                                      RxUtil rxUtil,
                                                      RssFeedCache rssFeedCache) {
-        return new RssFeedPresenter(rssIRssFeedView, rssUrlProvider, rssFeedManager, rxUtil, rssFeedCache);
+        return new RssFeedPresenter(rssFeedView, rssUrlProvider, rssFeedManager, rxUtil, rssFeedCache);
+    }
+
+    @Provides
+    @ActivityScope
+    public IRssUrlProvider provideRssUrlProvider() {
+        return mock(IRssUrlProvider.class);
     }
 
     @Provides
     @ActivityScope
     public RssFeedCache provideRssFeedCache() {
-        return new RssFeedCache(RssFeedPresenter.EXPECTED_RSS_ITEMS_NUMBER);
+        return spy(new RssFeedCache(250));
     }
 }

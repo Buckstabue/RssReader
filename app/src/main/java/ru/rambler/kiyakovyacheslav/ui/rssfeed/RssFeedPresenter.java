@@ -3,38 +3,43 @@ package ru.rambler.kiyakovyacheslav.ui.rssfeed;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import javax.inject.Inject;
-
-import ru.rambler.kiyakovyacheslav.App;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
 import ru.rambler.kiyakovyacheslav.model.RssItem;
 import ru.rambler.kiyakovyacheslav.model.mapper.RssItemMapper;
 import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
 import ru.rambler.kiyakovyacheslav.ui.base.BasePresenter;
+import ru.rambler.kiyakovyacheslav.util.RssFeedCache;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
-import ru.rambler.kiyakovyacheslav.util.comparator.RssViewItemByDateComparator;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
 
 public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter {
-    private static final String[] RSS_SOURCES = {
-//            "http://lenta.ru/rss",
-            "http://www.gazeta.ru/export/rss/lenta.xml"
-    };
 
-    @Inject
-    IRssFeedManager rssFeedManager;
+    /**
+     * This constant is used to create a list which will hold all the news items. Set it to the expected number of items
+     * to avoid recreating the list
+     */
+    public static final int EXPECTED_RSS_ITEMS_NUMBER = 250;
 
+    private IRssFeedManager rssFeedManager;
+    private RxUtil rxUtil;
+    private RssFeedCache rssFeedCache;
     private IRssFeedView rssFeedView;
+    private IRssUrlProvider rssUrlProvider;
 
-
-    public RssFeedPresenter(IRssFeedView rssFeedView) {
+    public RssFeedPresenter(IRssFeedView rssFeedView,
+                            IRssUrlProvider rssUrlProvider,
+                            IRssFeedManager rssFeedManager,
+                            RxUtil rxUtil,
+                            RssFeedCache rssFeedCache) {
         this.rssFeedView = rssFeedView;
-        App.getAppComponent().inject(this);
+        this.rssUrlProvider = rssUrlProvider;
+        this.rssFeedManager = rssFeedManager;
+        this.rxUtil = rxUtil;
+        this.rssFeedCache = rssFeedCache;
     }
 
     @Override
@@ -47,7 +52,23 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
     }
 
     @Override
-    public void loadRssItems() {
+    public void onRefreshItemsRequested() {
+        rssFeedView.hideEmptyView();
+        loadRssItems();
+    }
+
+    @Override
+    public void onViewStarted() {
+        if (rssFeedCache.isEmpty()) {
+            // if the view was started for the first time
+            loadRssItems();
+        } else {
+            // if the view was started due to a configuration change
+            rssFeedView.showRssItems(rssFeedCache.getItems());
+        }
+    }
+
+    private void loadRssItems() {
         rssFeedView.showRefreshProgressView();
         Observable<List<RssItem>> downloadRssItemsObservable = createDownloadRssItemsObservable();
         Subscription subscription = downloadRssItemsObservable.subscribe(new RssFeedSubscriber());
@@ -61,12 +82,13 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
      * successfully processed rss feeds
      */
     private Observable<List<RssItem>> createDownloadRssItemsObservable() {
-        List<Observable<List<RssItem>>> downloadObservableList = new ArrayList<>(RSS_SOURCES.length);
-        for (String rssUrl : RSS_SOURCES) {
+        List<String> urls = rssUrlProvider.provideRssUrlList();
+        List<Observable<List<RssItem>>> downloadObservableList = new ArrayList<>(urls.size());
+        for (String rssUrl : urls) {
             String website = parseSourceWebsite(rssUrl);
             Observable<List<RssItem>> observable = rssFeedManager.downloadRssFeed(rssUrl)
                     .map(items -> RssItemMapper.convertItemsToRssItems(items, website));
-            downloadObservableList.add(RxUtil.prepareIOObservable(observable));
+            downloadObservableList.add(rxUtil.prepareIOObservable(observable));
         }
         return Observable.mergeDelayError(downloadObservableList);
     }
@@ -81,9 +103,8 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
     }
 
     private class RssFeedSubscriber implements Observer<List<RssItem>> {
-        // TODO set default list size based on experience
-        private final List<RssViewItem> rssViewList = new ArrayList<>();
-        private final RssViewItemByDateComparator rssViewItemByDateComparator = new RssViewItemByDateComparator();
+        //        private final List<RssViewItem> rssViewList = new ArrayList<>(EXPECTED_RSS_ITEMS_NUMBER);
+        private boolean isFirstEmit = true;
 
         @Override
         public void onCompleted() {
@@ -94,23 +115,33 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
         public void onError(Throwable e) {
             rssFeedView.hideRefreshProgressView();
             rssFeedView.showError(e.getMessage());
+            if (rssFeedCache.isEmpty()) {
+                rssFeedView.showEmptyView();
+            }
         }
 
         @Override
         public void onNext(List<RssItem> rssItems) {
+            if (isFirstEmit) {
+                rssFeedCache.clear();
+                isFirstEmit = false;
+            }
             showItemsInUI(rssItems);
         }
 
         private void showItemsInUI(List<RssItem> rssItems) {
-            List<RssViewItem> newItems = Observable.from(rssItems)
-                    .map(RssViewItem::new)
-                    .toList()
-                    .toBlocking()
-                    .first();
-            rssViewList.addAll(newItems);
-            // sorting all the items by their date
-            Collections.sort(rssViewList, rssViewItemByDateComparator);
-            rssFeedView.showRssItems(rssViewList);
+            if (rssItems.isEmpty()) {
+                rssFeedView.showEmptyView();
+            } else {
+                rssFeedView.hideEmptyView();
+                List<RssViewItem> newItems = Observable.from(rssItems)
+                        .map(RssViewItem::new)
+                        .toList()
+                        .toBlocking()
+                        .first();
+                rssFeedCache.addItemsKeepingSortByDate(newItems);
+                rssFeedView.showRssItems(rssFeedCache.getItems());
+            }
         }
     }
 }

@@ -17,12 +17,11 @@ import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import ru.rambler.kiyakovyacheslav.App;
 import ru.rambler.kiyakovyacheslav.R;
 import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter;
 import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
-import ru.rambler.kiyakovyacheslav.ui.rssfeed.di.DaggerRssViewComponent;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.di.RssViewComponent;
-import ru.rambler.kiyakovyacheslav.ui.rssfeed.di.RssViewModule;
 
 public class RssFeedFragment extends Fragment implements IRssFeedView {
 
@@ -32,19 +31,29 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
     @BindView(R.id.swipe_refresh_layout)
     SwipeRefreshLayout swipeRefreshLayout;
 
+    @BindView(R.id.empty_view_container)
+    View emptyView;
+
+    @BindView(R.id.content_container)
+    View contentView;
+
     @Inject
     IRssFeedPresenter rssFeedPresenter;
+
 
     private RssItemAdapter rssItemAdapter;
 
     public static RssFeedFragment newInstance() {
-        return new RssFeedFragment();
+        RssFeedFragment fragment = new RssFeedFragment();
+        fragment.setRetainInstance(true);
+        return fragment;
     }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        RssViewComponent component = DaggerRssViewComponent.builder().rssViewModule(new RssViewModule(this)).build();
+        RssViewComponent component = App.getRssViewComponent(this);
         component.inject(this);
     }
 
@@ -61,17 +70,18 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
     @Override
     public void onStart() {
         super.onStart();
-        rssFeedPresenter.loadRssItems();
+        rssFeedPresenter.onViewStarted();
     }
 
     private void initViews() {
         rssItemAdapter = new RssItemAdapter((item, pos) -> rssFeedPresenter.onRssItemClicked(item, pos));
         rssRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         rssRecyclerView.setAdapter(rssItemAdapter);
+        rssRecyclerView.setHasFixedSize(false);
     }
 
     private void setListeners() {
-        swipeRefreshLayout.setOnRefreshListener(() -> rssFeedPresenter.loadRssItems());
+        swipeRefreshLayout.setOnRefreshListener(() -> rssFeedPresenter.onRefreshItemsRequested());
     }
 
     @Override
@@ -94,18 +104,29 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
 
     @Override
     public void showRefreshProgressView() {
-        swipeRefreshLayout.setRefreshing(true);
+        swipeRefreshLayout.post(() -> swipeRefreshLayout.setRefreshing(true));
     }
 
     @Override
     public void hideRefreshProgressView() {
-        swipeRefreshLayout.setRefreshing(false);
+        swipeRefreshLayout.post(() -> swipeRefreshLayout.setRefreshing(false));
     }
 
     @Override
     public void showError(String errorMessage) {
-        // TODO think of SnackBar
         Toast.makeText(getActivity(), errorMessage, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void showEmptyView() {
+        contentView.setVisibility(View.GONE);
+        emptyView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void hideEmptyView() {
+        emptyView.setVisibility(View.GONE);
+        contentView.setVisibility(View.VISIBLE);
     }
 
     @Override
