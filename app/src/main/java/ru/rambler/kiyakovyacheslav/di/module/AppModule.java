@@ -1,4 +1,4 @@
-package ru.rambler.kiyakovyacheslav.di;
+package ru.rambler.kiyakovyacheslav.di.module;
 
 
 import android.content.Context;
@@ -9,6 +9,7 @@ import dagger.Module;
 import dagger.Provides;
 import okhttp3.OkHttpClient;
 import ru.rambler.kiyakovyacheslav.App;
+import ru.rambler.kiyakovyacheslav.di.PerApp;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
 import ru.rambler.kiyakovyacheslav.model.RssFeedManager;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
@@ -23,31 +24,31 @@ public class AppModule {
         this.app = app;
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public OkHttpClient provideOkHttpClient() {
         return new OkHttpClient();
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public IRssFeedManager provideRssFeedManager(OkHttpClient httpClient) {
         return new RssFeedManager(httpClient);
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public Context provideApplicationContext() {
         return app;
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public Picasso providePicasso() {
         return Picasso.with(app);
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public RxUtil provideRxUtil() {
         return new RxUtil(Schedulers.io(), AndroidSchedulers.mainThread());

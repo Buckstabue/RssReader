@@ -1,5 +1,7 @@
 package ru.rambler.kiyakovyacheslav.ui.rssfeed;
 
+import android.util.Log;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -8,7 +10,7 @@ import java.util.List;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
 import ru.rambler.kiyakovyacheslav.model.RssItem;
 import ru.rambler.kiyakovyacheslav.model.mapper.RssItemMapper;
-import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
+import ru.rambler.kiyakovyacheslav.model.RssItemVO;
 import ru.rambler.kiyakovyacheslav.ui.base.BasePresenter;
 import ru.rambler.kiyakovyacheslav.util.RssFeedCache;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
@@ -17,6 +19,7 @@ import rx.Observer;
 import rx.Subscription;
 
 public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter {
+    private static final String TAG = RssFeedPresenter.class.getSimpleName();
 
     /**
      * This constant is used to create a list which will hold all the news items. Set it to the expected number of items
@@ -43,11 +46,11 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
     }
 
     @Override
-    public void onRssItemClicked(RssViewItem rssViewItem, int position) {
-        if (rssViewItem.isExpanded()) {
-            rssFeedView.collapseRssItem(rssViewItem, position);
+    public void onRssItemClicked(RssItemVO rssItemVO, int position) {
+        if (rssItemVO.isExpanded()) {
+            rssFeedView.collapseRssItem(rssItemVO, position);
         } else {
-            rssFeedView.expandRssItem(rssViewItem, position);
+            rssFeedView.expandRssItem(rssItemVO, position);
         }
     }
 
@@ -87,7 +90,7 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
         for (String rssUrl : urls) {
             String website = parseSourceWebsite(rssUrl);
             Observable<List<RssItem>> observable = rssFeedManager.downloadRssFeed(rssUrl)
-                    .map(items -> RssItemMapper.convertItemsToRssItems(items, website));
+                    .map(items -> RssItemMapper.toRssItems(items, website));
             downloadObservableList.add(rxUtil.prepareIOObservable(observable));
         }
         return Observable.mergeDelayError(downloadObservableList);
@@ -97,13 +100,25 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
         try {
             return new URL(url).getHost();
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            Log.e(TAG, "parseSourceWebsite: error", e);
             return url;
         }
     }
 
+    private void onNewRssItemsReceived(List<RssItem> rssItems) {
+        if (rssItems.isEmpty()) {
+            rssFeedView.showEmptyView();
+        } else {
+            rssFeedView.hideEmptyView();
+            List<RssItemVO> newItems = RssItemMapper.toRssItemVOs(rssItems);
+            rssFeedCache.addItemsKeepingSortByDate(newItems);
+            rssFeedView.showRssItems(rssFeedCache.getItems());
+        }
+
+    }
+
     private class RssFeedSubscriber implements Observer<List<RssItem>> {
-        //        private final List<RssViewItem> rssViewList = new ArrayList<>(EXPECTED_RSS_ITEMS_NUMBER);
+        //        private final List<RssItemVO> rssViewList = new ArrayList<>(EXPECTED_RSS_ITEMS_NUMBER);
         private boolean isFirstEmit = true;
 
         @Override
@@ -126,22 +141,7 @@ public class RssFeedPresenter extends BasePresenter implements IRssFeedPresenter
                 rssFeedCache.clear();
                 isFirstEmit = false;
             }
-            showItemsInUI(rssItems);
-        }
-
-        private void showItemsInUI(List<RssItem> rssItems) {
-            if (rssItems.isEmpty()) {
-                rssFeedView.showEmptyView();
-            } else {
-                rssFeedView.hideEmptyView();
-                List<RssViewItem> newItems = Observable.from(rssItems)
-                        .map(RssViewItem::new)
-                        .toList()
-                        .toBlocking()
-                        .first();
-                rssFeedCache.addItemsKeepingSortByDate(newItems);
-                rssFeedView.showRssItems(rssFeedCache.getItems());
-            }
+            onNewRssItemsReceived(rssItems);
         }
     }
 }

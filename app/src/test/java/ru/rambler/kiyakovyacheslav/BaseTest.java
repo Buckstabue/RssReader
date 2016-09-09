@@ -1,5 +1,7 @@
 package ru.rambler.kiyakovyacheslav;
 
+import android.app.Application;
+
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.mockito.AdditionalMatchers;
@@ -11,7 +13,7 @@ import org.robolectric.annotation.Config;
 import java.util.List;
 
 @RunWith(RobolectricGradleTestRunner.class)
-@Config(application = TestApplication.class,
+@Config(application = Application.class,
         constants = BuildConfig.class,
         sdk = 21)
 @Ignore

@@ -4,23 +4,23 @@ import com.einmalfel.earl.Item;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.List;
 
-import javax.inject.Inject;
-
 import ru.rambler.kiyakovyacheslav.BaseTest;
-import ru.rambler.kiyakovyacheslav.RssFeed.di.RssViewTestComponent;
-import ru.rambler.kiyakovyacheslav.TestApplication;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
-import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
+import ru.rambler.kiyakovyacheslav.model.RssItemVO;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssFeedPresenter;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssFeedView;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssUrlProvider;
+import ru.rambler.kiyakovyacheslav.ui.rssfeed.RssFeedPresenter;
 import ru.rambler.kiyakovyacheslav.util.RssFeedCache;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
+import ru.rambler.kiyakovyacheslav.util.TestRxUtil;
 import rx.Observable;
 
 import static org.mockito.Matchers.any;
@@ -30,6 +30,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -37,29 +38,30 @@ import static org.mockito.Mockito.when;
 
 public class RssFeedPresenterTest extends BaseTest {
 
-    @Inject
-    IRssFeedPresenter rssFeedPresenter;
+    @Mock
+    private IRssFeedManager rssFeedManagerMock;
 
-    @Inject
-    IRssFeedManager rssFeedManagerMock;
+    @Mock
+    private IRssUrlProvider rssUrlProviderMock;
 
-    @Inject
-    IRssUrlProvider rssUrlProviderMock;
-
-    @Inject
-    RssFeedCache rssFeedCache;
-
-    @Inject
-    RxUtil rxUtilMock;
-
-
+    @Mock
     private IRssFeedView rssFeedViewMock;
+
+    private RssFeedCache rssFeedCache;
+    private IRssFeedPresenter rssFeedPresenter;
+
+    private RxUtil rxUtil = new TestRxUtil();
+
 
     @Before
     public void setUp() throws Exception {
-        rssFeedViewMock = mock(IRssFeedView.class);
-        RssViewTestComponent rssViewComponent = (RssViewTestComponent) TestApplication.getRssViewComponent(rssFeedViewMock);
-        rssViewComponent.inject(this);
+        MockitoAnnotations.initMocks(this);
+        rssFeedCache = spy(new RssFeedCache(250));
+        rssFeedPresenter = new RssFeedPresenter(rssFeedViewMock,
+                rssUrlProviderMock,
+                rssFeedManagerMock,
+                rxUtil,
+                rssFeedCache);
     }
 
     @Test
@@ -76,7 +78,7 @@ public class RssFeedPresenterTest extends BaseTest {
      */
     @Test
     public void onViewStarted_showsPreviouslyLoadedItemsIfPresent() {
-        List<RssViewItem> cachedListMock = Arrays.asList(mock(RssViewItem.class));
+        List<RssItemVO> cachedListMock = Arrays.asList(mock(RssItemVO.class));
         rssFeedCache.addItemsKeepingSortByDate(cachedListMock);
 
         rssFeedPresenter.onViewStarted();
@@ -105,7 +107,7 @@ public class RssFeedPresenterTest extends BaseTest {
 
     @Test
     public void onRssItemClicked_expandedItemGetsCollapsed() {
-        RssViewItem rssItemMock = mock(RssViewItem.class);
+        RssItemVO rssItemMock = mock(RssItemVO.class);
         int position = 0;
         boolean expanded = true;
         when(rssItemMock.isExpanded()).thenReturn(expanded);
@@ -114,14 +116,14 @@ public class RssFeedPresenterTest extends BaseTest {
 
         verify(rssFeedViewMock).collapseRssItem(rssItemMock, position);
         verify(rssFeedViewMock, never()).expandRssItem(any(), anyInt());
-        // RssViewItem expanded state should not be affected by the presenter, it's task of view
+        // RssItemVO expanded state should not be affected by the presenter, it's task of view
         verify(rssItemMock, never()).setExpanded(anyBoolean());
         verify(rssFeedViewMock, never()).showError(anyString());
     }
 
     @Test
     public void onRssItemClicked_collapsedItemGetsExpanded() {
-        RssViewItem rssItemMock = mock(RssViewItem.class);
+        RssItemVO rssItemMock = mock(RssItemVO.class);
         int position = 0;
         boolean expanded = false;
         when(rssItemMock.isExpanded()).thenReturn(expanded);
@@ -130,7 +132,7 @@ public class RssFeedPresenterTest extends BaseTest {
 
         verify(rssFeedViewMock).expandRssItem(rssItemMock, position);
         verify(rssFeedViewMock, never()).collapseRssItem(any(), anyInt());
-        // RssViewItem expanded state should not be affected by the presenter, it's task of view
+        // RssItemVO expanded state should not be affected by the presenter, it's task of view
         verify(rssItemMock, never()).setExpanded(anyBoolean());
         verify(rssFeedViewMock, never()).showError(anyString());
     }

@@ -1,9 +1,10 @@
 <resources>
-    <dimen name="common_left_margin">12dp</dimen>
+    <dimen name="common_left_margin">16dp</dimen>
     <dimen name="common_right_margin">16dp</dimen>
 
     <dimen name="rss_item_icon_width">48dp</dimen>
     <dimen name="rss_item_icon_height">@dimen/rss_item_icon_width</dimen>
+
     <dimen name="rss_item_title_left_margin">12dp</dimen>
     <dimen name="rss_item_top_margin">12dp</dimen>
 </resources>

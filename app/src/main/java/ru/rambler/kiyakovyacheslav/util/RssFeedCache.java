@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
+import ru.rambler.kiyakovyacheslav.model.RssItemVO;
 import ru.rambler.kiyakovyacheslav.util.comparator.RssViewItemByDateComparator;
 
 public class RssFeedCache {
-    private final List<RssViewItem> cachedItems;
+    private final List<RssItemVO> cachedItems;
     private final RssViewItemByDateComparator rssViewItemByDateComparator = new RssViewItemByDateComparator();
 
     public RssFeedCache(int defaultSize) {
@@ -22,14 +22,14 @@ public class RssFeedCache {
     /**
      * Adds the provided items to the cache keeping sorting by date in descending order
      */
-    public void addItemsKeepingSortByDate(List<RssViewItem> items) {
+    public void addItemsKeepingSortByDate(List<RssItemVO> items) {
         cachedItems.addAll(items);
         // sorting all the items by date in descending order
         Collections.sort(cachedItems, rssViewItemByDateComparator);
 
     }
 
-    public List<RssViewItem> getItems() {
+    public List<RssItemVO> getItems() {
         return cachedItems;
     }
 

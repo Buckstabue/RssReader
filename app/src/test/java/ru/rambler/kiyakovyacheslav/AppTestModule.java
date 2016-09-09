@@ -7,7 +7,7 @@ import com.squareup.picasso.Picasso;
 import dagger.Module;
 import dagger.Provides;
 import okhttp3.OkHttpClient;
-import ru.rambler.kiyakovyacheslav.di.AppScope;
+import ru.rambler.kiyakovyacheslav.di.PerApp;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
 import ru.rambler.kiyakovyacheslav.model.RssFeedManager;
 import ru.rambler.kiyakovyacheslav.util.RxUtil;
@@ -18,31 +18,31 @@ import static org.mockito.Mockito.mock;
 @Module
 public class AppTestModule {
 
-    @AppScope
+    @PerApp
     @Provides
     public OkHttpClient provideOkHttpClient() {
         return mock(OkHttpClient.class);
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public IRssFeedManager provideRssFeedManager() {
         return mock(RssFeedManager.class);
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public Context provideApplicationContext() {
         return mock(Context.class);
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public Picasso providePicasso() {
         return mock(Picasso.class);
     }
 
-    @AppScope
+    @PerApp
     @Provides
     public RxUtil provideRxUtil() {
         return new RxUtil(Schedulers.immediate(), Schedulers.immediate());

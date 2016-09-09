@@ -8,12 +8,13 @@ import com.einmalfel.earl.Item;
 import java.util.List;
 
 import ru.rambler.kiyakovyacheslav.model.RssItem;
+import ru.rambler.kiyakovyacheslav.model.RssItemVO;
 import ru.rambler.kiyakovyacheslav.util.StringUtil;
 import rx.Observable;
 
 public class RssItemMapper {
 
-    public static RssItem convertItemToRssItem(Item item, String websiteProvider) {
+    public static RssItem toRssItem(Item item, String websiteProvider) {
         RssItem rssItem = new RssItem();
         rssItem.setTitle(StringUtil.trim(item.getTitle()));
         rssItem.setDescription(StringUtil.trim(item.getDescription()));
@@ -28,9 +29,17 @@ public class RssItemMapper {
         return rssItem;
     }
 
-    public static List<RssItem> convertItemsToRssItems(List<? extends Item> items, String websiteProvider) {
+    public static List<RssItem> toRssItems(List<? extends Item> items, String websiteProvider) {
         return Observable.from(items)
-                .map(item -> convertItemToRssItem(item, websiteProvider))
+                .map(item -> toRssItem(item, websiteProvider))
+                .toList()
+                .toBlocking()
+                .first();
+    }
+
+    public static List<RssItemVO> toRssItemVOs(List<? extends RssItem> rssItems) {
+        return Observable.from(rssItems)
+                .map(RssItemVO::new)
                 .toList()
                 .toBlocking()
                 .first();

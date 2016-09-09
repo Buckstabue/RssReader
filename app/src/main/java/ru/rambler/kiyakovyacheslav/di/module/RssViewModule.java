@@ -1,10 +1,13 @@
-package ru.rambler.kiyakovyacheslav.ui.rssfeed.di;
+package ru.rambler.kiyakovyacheslav.di.module;
+
+import com.squareup.picasso.Picasso;
 
 import dagger.Module;
 import dagger.Provides;
-import ru.rambler.kiyakovyacheslav.di.ActivityScope;
+import ru.rambler.kiyakovyacheslav.di.PerFragment;
 import ru.rambler.kiyakovyacheslav.model.IRssFeedManager;
 import ru.rambler.kiyakovyacheslav.model.RssUrlProvider;
+import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssFeedPresenter;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssFeedView;
 import ru.rambler.kiyakovyacheslav.ui.rssfeed.IRssUrlProvider;
@@ -22,13 +25,13 @@ public class RssViewModule {
 
 
     @Provides
-    @ActivityScope
+    @PerFragment
     public IRssUrlProvider provideRssUrlProvider() {
         return new RssUrlProvider();
     }
 
     @Provides
-    @ActivityScope
+    @PerFragment
     public IRssFeedPresenter provideRssFeedPresenter(IRssUrlProvider rssUrlProvider,
                                                      IRssFeedManager rssFeedManager,
                                                      RxUtil rxUtil,
@@ -37,8 +40,14 @@ public class RssViewModule {
     }
 
     @Provides
-    @ActivityScope
+    @PerFragment
     public RssFeedCache provideRssFeedCache() {
         return new RssFeedCache(RssFeedPresenter.EXPECTED_RSS_ITEMS_NUMBER);
+    }
+
+    @Provides
+    @PerFragment
+    public RssItemAdapter providRssItemAdapter(Picasso picasso) {
+        return new RssItemAdapter(picasso);
     }
 }

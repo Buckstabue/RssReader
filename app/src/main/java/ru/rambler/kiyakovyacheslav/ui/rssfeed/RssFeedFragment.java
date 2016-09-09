@@ -19,29 +19,26 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import ru.rambler.kiyakovyacheslav.App;
 import ru.rambler.kiyakovyacheslav.R;
+import ru.rambler.kiyakovyacheslav.di.component.DaggerRssViewComponent;
+import ru.rambler.kiyakovyacheslav.di.component.RssViewComponent;
+import ru.rambler.kiyakovyacheslav.di.module.RssViewModule;
+import ru.rambler.kiyakovyacheslav.model.RssItemVO;
 import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter;
-import ru.rambler.kiyakovyacheslav.ui.adapter.RssItemAdapter.RssViewItem;
-import ru.rambler.kiyakovyacheslav.ui.rssfeed.di.RssViewComponent;
 
 public class RssFeedFragment extends Fragment implements IRssFeedView {
+    public static final String TAG = RssFeedFragment.class.getSimpleName();
 
     @BindView(R.id.rss_feed)
-    RecyclerView rssRecyclerView;
+    RecyclerView recyclerView;
 
     @BindView(R.id.swipe_refresh_layout)
     SwipeRefreshLayout swipeRefreshLayout;
 
-    @BindView(R.id.empty_view_container)
-    View emptyView;
-
-    @BindView(R.id.content_container)
-    View contentView;
-
     @Inject
     IRssFeedPresenter rssFeedPresenter;
 
-
-    private RssItemAdapter rssItemAdapter;
+    @Inject
+    RssItemAdapter adapter;
 
     public static RssFeedFragment newInstance() {
         RssFeedFragment fragment = new RssFeedFragment();
@@ -53,18 +50,27 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        RssViewComponent component = App.getRssViewComponent(this);
+        RssViewComponent component = DaggerRssViewComponent.builder()
+                .appComponent(App.getAppComponent())
+                .rssViewModule(new RssViewModule(this))
+                .build();
         component.inject(this);
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.rss_feed_fragment, container, false);
-        ButterKnife.bind(this, rootView);
-        initViews();
-        setListeners();
-        return rootView;
+        return inflater.inflate(R.layout.fragment_rss_feed, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        ButterKnife.bind(this, view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(adapter);
+        adapter.setCallback((item, pos) -> rssFeedPresenter.onRssItemClicked(item, pos));
+        swipeRefreshLayout.setOnRefreshListener(() -> rssFeedPresenter.onRefreshItemsRequested());
+        super.onViewCreated(view, savedInstanceState);
     }
 
     @Override
@@ -73,33 +79,22 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
         rssFeedPresenter.onViewStarted();
     }
 
-    private void initViews() {
-        rssItemAdapter = new RssItemAdapter((item, pos) -> rssFeedPresenter.onRssItemClicked(item, pos));
-        rssRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        rssRecyclerView.setAdapter(rssItemAdapter);
-        rssRecyclerView.setHasFixedSize(false);
-    }
-
-    private void setListeners() {
-        swipeRefreshLayout.setOnRefreshListener(() -> rssFeedPresenter.onRefreshItemsRequested());
+    @Override
+    public void showRssItems(List<RssItemVO> rssItems) {
+        adapter.setRssItemVOs(rssItems);
+        adapter.notifyDataSetChanged();
     }
 
     @Override
-    public void showRssItems(List<RssViewItem> rssItems) {
-        rssItemAdapter.setRssViewItems(rssItems);
-        rssItemAdapter.notifyDataSetChanged();
+    public void expandRssItem(RssItemVO rssItemVO, int position) {
+        rssItemVO.setExpanded(true);
+        adapter.notifyItemChanged(position);
     }
 
     @Override
-    public void expandRssItem(RssViewItem rssViewItem, int position) {
-        rssViewItem.setExpanded(true);
-        rssItemAdapter.notifyItemChanged(position);
-    }
-
-    @Override
-    public void collapseRssItem(RssViewItem rssViewItem, int position) {
-        rssViewItem.setExpanded(false);
-        rssItemAdapter.notifyItemChanged(position);
+    public void collapseRssItem(RssItemVO rssItemVO, int position) {
+        rssItemVO.setExpanded(false);
+        adapter.notifyItemChanged(position);
     }
 
     @Override
@@ -119,19 +114,17 @@ public class RssFeedFragment extends Fragment implements IRssFeedView {
 
     @Override
     public void showEmptyView() {
-        contentView.setVisibility(View.GONE);
-        emptyView.setVisibility(View.VISIBLE);
+        adapter.setEmptyViewShown(true, recyclerView);
     }
 
     @Override
     public void hideEmptyView() {
-        emptyView.setVisibility(View.GONE);
-        contentView.setVisibility(View.VISIBLE);
+        adapter.setEmptyViewShown(false, recyclerView);
     }
 
     @Override
     public void onStop() {
-        super.onStop();
         rssFeedPresenter.onStop();
+        super.onStop();
     }
 }
